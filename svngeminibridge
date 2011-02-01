@@ -70,7 +70,7 @@ class SVNGeminiBridge
     @svn_remote_url = config['svn_remote_url'] if config['svn_remote_url']
     @svn_remote_url = @svn_remote_url[0..-2] if @svn_remote_url[-1] == ?/
     @repos = @repos[0..-2] if @repos[-1] == ?/
-    @svn_remote_url = File.join(@svn_remote_url, File.dirname(File.dirname(__FILE__)).rpartition('/').last)
+    @svn_remote_url = File.join(@svn_remote_url, File.dirname(File.expand_path(File.dirname(__FILE__))).rpartition('/').last)
     @rev = rev.to_i
     @username = config['username']
     @encusername = Base64.encode64(@username)
@@ -379,7 +379,7 @@ class SVNGeminiBridge
   end
 
   # The tokens needed for Gemini (either with password token or api token)
-  def gemini_pass
+  def pass
     pass = {'gemini-username-token' => @encusername}
     if @mode == :password
       pass['gemini-password-token'] = @encpassword
@@ -404,7 +404,9 @@ class SVNGeminiBridge
   # A generalisation for request_post together with the proper tokens
   def gemini_post(http, path, data)
     puts "Tx      : #{path}"
-    http.request_post(File.join(@base_path, path), data, pass)
+    p = pass
+    p['content-type'] = 'text/xml' 
+    http.request_post(File.join(@base_path, path), data, p)
   end
   
   
@@ -425,3 +427,4 @@ if ARGV.length != 2
 else
 SVNGeminiBridge.new(config, ARGV[0], ARGV[1]).start
 end
+
