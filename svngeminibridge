@@ -134,7 +134,8 @@ class SVNGeminiBridge
     doc.elements.each('log/logentry/msg') { |msg| @msg = msg.text }
     doc.elements.each('log/logentry/author') { |author| @author = author.text }
     
-    _, _, text = @msg.partition('GEM:')
+    text = nil
+    _, _, text = @msg.partition('GEM:') if @msg
     if text == nil or text.size == 0
       raise SystemExit.new(0)
     end
@@ -389,24 +390,41 @@ class SVNGeminiBridge
     return pass
   end
   
+  # Executes something a number of times if failed, after that write the message to the log
+  def bomb_proof(retries)
+    begin
+      yield
+    rescue
+      retries -= 1
+      retry if retries > 0
+      $stderr.puts "An error occurred while sending a REST command to the Gemini Application Server"
+    end
+  end
+  
   # A generalisation for request_get together with the proper tokens
   def gemini_get(http, path)
-    puts "Rq      : #{path}"
-    http.request_get(File.join(@base_path, path), pass)
+    bomb_proof 3 do
+      puts "Rq      : #{path}"
+      http.request_get(File.join(@base_path, path), pass)
+    end
   end
 
   # A generalisation for request(Delete.new) together with the proper tokens
   def gemini_delete(http, path)
-    puts "Rm      : #{path}"
-    http.request(Net::HTTP::Delete.new(File.join(@base_path, path), pass))
+    bomb_proof 3 do
+      puts "Rm      : #{path}"
+      http.request(Net::HTTP::Delete.new(File.join(@base_path, path), pass))
+    end
   end
 
   # A generalisation for request_post together with the proper tokens
   def gemini_post(http, path, data)
-    puts "Tx      : #{path}"
-    p = pass
-    p['content-type'] = 'text/xml' 
-    http.request_post(File.join(@base_path, path), data, p)
+    bomb_proof 3 do
+      puts "Tx      : #{path}"
+      p = pass
+      p['content-type'] = 'text/xml' 
+      http.request_post(File.join(@base_path, path), data, p)
+    end
   end
   
   
