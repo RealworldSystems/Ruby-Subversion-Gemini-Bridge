@@ -327,9 +327,14 @@ class SVNGeminiBridge
     # The various rows
     create_table_row(table_elem, 'Author', @author)
     create_table_row(table_elem, 'SVN Revision', @rev)
-    create_table_row(table_elem, 'Affected Files', @files.collect {|f|
-                       "#{@svn_remote_url}#{f[:location]} (#{f[:action]})"
-                     })
+    
+    if @files.size < 50
+      create_table_row(table_elem, 'Affected Files', @files.collect {|f|
+                         "#{@svn_remote_url}#{f[:location]} (#{f[:action]})"
+                       })
+    else
+      create_table_row(table_elem, 'Affected Files', 'Too many files have been affected to put in the message')
+    end
     create_table_row(table_elem, 'Check-in Comment', @msg)
     
     # Creating the data xml
